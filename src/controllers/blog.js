@@ -18,8 +18,11 @@ module.exports = {
                 </ul>
             `
         */ 
+      
        if (req.query.author) {
-      const data = await Blog.find({ userId: req.query.author });
+        const data = await Blog.find({ userId: req.query.author }).populate([
+          { path: "userId", select: "firstName lastName image" },
+        ]);
 
       res.status(200).send({
         error: false,
@@ -31,8 +34,17 @@ module.exports = {
     } else {
       const data = await res.getModelList(Blog, { isPublish: true }, [
         "categoryId",
-        "userId",
-        { path: "comments", populate: "userId" },
+        {
+          path: "userId",
+          select: "firstName lastName image",
+        },
+        {
+          path: "comments",
+          populate: {
+            path: "userId",
+            select: "firstName lastName image",
+          },
+        },
       ]);
 
       res.status(200).send({
@@ -52,9 +64,10 @@ module.exports = {
             required: true,
         }
     */
+   console.log(req.user)
     const userId = req.user.id;
-    req.body.authorId = userId;
-
+   console.log(userId)
+   req.body.userId=userId
     const data = await Blog.create(req.body);
 
     res.status(201).send({
@@ -74,8 +87,16 @@ module.exports = {
       { _id: req.params.id },
       { $addToSet: { visitors: ip } }, // Unique count of visitors
       { new: true }
-    ).populate([{ path: "comments", populate: "userId" }, "userId"]);
-
+    ).populate({
+      path: "comments",
+      populate: {
+        path: "userId",
+        select: "firstName lastName image"
+      }
+    }).populate({
+      path: "userId",
+      select: "firstName lastName image"
+    });
     res.status(200).send({
       error: false,
       data,
